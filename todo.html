@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Motivated To-Do</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif;}
+body { height:100vh; display:flex; justify-content:center; align-items:center; background:linear-gradient(-45deg,#ff6ec4,#7873f5,#4facfe,#43e97b); background-size:400% 400%; animation: gradientBG 12s ease infinite;}
+@keyframes gradientBG { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+.container{ width:380px; background:white; padding:25px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.3); margin-bottom:20px;}
+h2{text-align:center; margin-bottom:15px;}
+input{width:100%; padding:10px; margin:8px 0; border-radius:8px; border:1px solid #ccc;}
+button{width:100%; padding:10px; border:none; border-radius:8px; background:#667eea; color:white; font-size:16px; cursor:pointer;}
+button:hover{background:#5a67d8;}
+.link{text-align:center; margin-top:10px; color:#555; cursor:pointer;}
+.quote{background:linear-gradient(135deg,#ff9a9e,#fad0c4); padding:15px; border-radius:10px; text-align:center; font-weight:600; margin-bottom:15px;}
+ul{list-style:none; margin-top:10px; padding:0;}
+li{background:#f1f1f1; padding:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border-radius:6px; position:relative; transition: transform 0.2s;}
+li.completed{text-decoration:line-through; color:gray;}
+.delete-btn{background:transparent; border:none; font-size:18px; cursor:pointer; opacity:0; transition:opacity 0.3s ease, transform 0.2s ease;}
+li:hover .delete-btn{opacity:1; transform:scale(1.2);}
+.delete-btn:hover{color:#ff4d4d; animation: blink 0.6s infinite alternate;}
+@keyframes blink{from{opacity:0.6;} to{opacity:1;}}
+.logout{margin-top:15px; background:#ff5c5c;}
+.confetti{position:fixed; width:12px; height:12px; z-index:9999; pointer-events:none; top:-10px;}
+.delete-btn {
+    background: transparent;
+    border: none;
+    font-size: 14px; /* smaller size */
+    color: #ff4d4d;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+li:hover .delete-btn {
+    opacity: 1;
+}
+
+</style>
+</head>
+<body>
+
+<!-- Sign Up -->
+<div class="container" id="signup">
+<h2>✨ Create Account</h2>
+<input type="text" id="signupName" placeholder="Your Name">
+<input type="password" id="signupPass" placeholder="Password">
+<button onclick="signup()">Sign Up</button>
+<div class="link" onclick="showLogin()">Already have an account?</div>
+</div>
+
+<!-- Login -->
+<div class="container" id="login" style="display:none;">
+<h2>🔐 Login</h2>
+<input type="text" id="loginName" placeholder="Your Name">
+<input type="password" id="loginPass" placeholder="Password">
+<button onclick="login()">Login</button>
+<div class="link" onclick="showSignup()">Don't have an account?</div>
+</div>
+
+<!-- Dashboard -->
+<div class="container" id="dashboard" style="display:none;">
+<h2 id="welcome"></h2>
+<div class="quote" id="quote"></div>
+<input type="text" id="taskInput" placeholder="What will you conquer today?">
+<input type="time" id="taskTime">
+<button onclick="addTask()">Add Task 🚀</button>
+<ul id="taskList"></ul>
+<button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<script>
+const quotes = [
+"Discipline beats motivation.",
+"You didn’t come this far to stop.",
+"Focus today. Flex tomorrow.",
+"Consistency builds confidence.",
+"Dream big. Execute daily."
+];
+
+function signup(){
+  const name = document.getElementById("signupName").value.trim();
+  const pass = document.getElementById("signupPass").value.trim();
+  if(!name || !pass){ alert("Fill both fields 🙃"); return; }
+  let users = JSON.parse(localStorage.getItem("users")||"[]");
+  if(users.find(u=>u.name===name)){alert("User exists!"); return;}
+  users.push({name, pass});
+  localStorage.setItem("users", JSON.stringify(users));
+  alert("Sign Up Successful!");
+  showLogin();
+}
+
+function login(){
+  const name = document.getElementById("loginName").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+  let users = JSON.parse(localStorage.getItem("users")||"[]");
+  let user = users.find(u=>u.name===name && u.pass===pass);
+  if(!user){alert("Wrong credentials 😬"); return;}
+  localStorage.setItem("loggedIn", name);
+  showDashboard();
+}
+
+function showLogin(){document.getElementById("signup").style.display="none"; document.getElementById("login").style.display="block";}
+function showSignup(){document.getElementById("login").style.display="none"; document.getElementById("signup").style.display="block";}
+
+function showDashboard(){
+  document.getElementById("signup").style.display="none";
+  document.getElementById("login").style.display="none";
+  document.getElementById("dashboard").style.display="block";
+
+  const user = localStorage.getItem("loggedIn");
+  document.getElementById("welcome").innerText=`Hey ${user} 👋`;
+  document.getElementById("quote").innerText = quotes[Math.floor(Math.random()*quotes.length)];
+
+  loadTasks();
+}
+
+function logout(){
+  localStorage.removeItem("loggedIn");
+  location.reload();
+}
+
+function addTask(){
+  const text = document.getElementById("taskInput").value.trim();
+  const time = document.getElementById("taskTime").value;
+  if(!text){alert("Task empty 😤"); return;}
+
+  const li = document.createElement("li");
+  li.dataset.completed="false";
+  li.innerHTML = `<div><strong>${text}</strong><br><small>${time ? '⏰ Finish before '+time : '✨ No deadline — just do it'}</small></div>`;
+
+  // Complete on click
+  li.addEventListener("click",()=>{
+    if(li.dataset.completed==="false"){
+      li.dataset.completed="true";
+      li.classList.add("completed");
+      celebrate();
+      saveTasks();
+    }
+  });
+
+  // Delete button
+  const del = document.createElement("button");
+  del.className="delete-btn";
+  del.innerText="🗑️";
+  del.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    li.remove();
+    saveTasks();
+  });
+  li.appendChild(del);
+
+  document.getElementById("taskList").appendChild(li);
+  document.getElementById("taskInput").value="";
+  document.getElementById("taskTime").value="";
+  saveTasks();
+}
+
+function saveTasks(){
+  const tasks=[];
+  document.querySelectorAll("#taskList li").forEach(li=>{
+    tasks.push({
+      text: li.querySelector("div strong").innerText,
+      time: li.querySelector("div small").innerText,
+      done: li.classList.contains("completed")
+    });
+  });
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function loadTasks(){
+  document.getElementById("taskList").innerHTML="";
+  const tasks = JSON.parse(localStorage.getItem("tasks")||"[]");
+  tasks.forEach(t=>{
+    const li=document.createElement("li");
+    li.dataset.completed=t.done?"true":"false";
+    if(t.done) li.classList.add("completed");
+    li.innerHTML = `<div><strong>${t.text}</strong><br><small>${t.time}</small></div>`;
+    // Complete toggle
+    li.addEventListener("click",()=>{
+      li.classList.toggle("completed");
+      li.dataset.completed = li.classList.contains("completed")?"true":"false";
+      saveTasks();
+      if(li.dataset.completed==="true") celebrate();
+    });
+    // Delete button
+    const del = document.createElement("button");
+    del.className="delete-btn";
+    del.innerText="🗑️";
+    del.addEventListener("click",(e)=>{
+      e.stopPropagation();
+      li.remove();
+      saveTasks();
+    });
+    li.appendChild(del);
+    document.getElementById("taskList").appendChild(li);
+  });
+}
+
+// Celebration confetti
+function celebrate(){
+  for(let i=0;i<100;i++){
+    const conf=document.createElement("div");
+    conf.className="confetti";
+    conf.style.left=Math.random()*100+"vw";
+    conf.style.backgroundColor=`hsl(${Math.random()*360},100%,50%)`;
+    conf.style.transform=`rotate(${Math.random()*360}deg)`;
+    conf.style.animation=`fall ${2+Math.random()*2}s linear forwards`;
+    document.body.appendChild(conf);
+    setTimeout(()=>conf.remove(),4000);
+  }
+  const user = localStorage.getItem("loggedIn")||"Legend";
+  setTimeout(()=>alert(`🎉 Hooray ${user}!\nYou completed a task.\nMomentum > Motivation 🔥`),200);
+}
+
+// Auto-login if already logged in
+if(localStorage.getItem("loggedIn")) showDashboard();
+</script>
+</body>
+</html>
